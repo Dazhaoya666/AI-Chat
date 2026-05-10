@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI女团 - 聊天</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="chat-page">
+    <div class="chat-container">
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="user-info">
+                    <span id="username">User</span>
+                </div>
+            </div>
+            
+            <div class="character-list">
+                <h3>选择角色</h3>
+                <div id="characterList"></div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <button onclick="goToMoments()" class="btn btn-small">📷 朋友圈</button>
+                <button onclick="logout()" class="btn btn-small btn-secondary">退出</button>
+            </div>
+        </div>
+        
+        <!-- 聊天区域 -->
+        <div class="chat-main">
+            <div class="chat-header">
+                <div class="character-info">
+                    <div class="avatar" id="characterAvatar">🎭</div>
+                    <div class="info">
+                        <h3 id="characterName">选择角色</h3>
+                        <p id="characterDesc">点击左侧角色开始对话</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="welcome-message">
+                    <div class="welcome-content">
+                        <h2>👋 欢迎来到 AI女团</h2>
+                        <p>在左侧选择一个角色，开始你们的对话吧！</p>
+                        <p>点击 📷 朋友圈 可以查看角色的动态~</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input-area">
+                <div class="input-container">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="输入消息..." 
+                        rows="1"
+                        onkeydown="handleKeyDown(event)"
+                    ></textarea>
+                    <button onclick="sendMessage()" class="btn-send">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/js/chat.js?v=2"></script>
+</body>
+</html>

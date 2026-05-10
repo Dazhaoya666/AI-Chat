@@ -1,0 +1,502 @@
+/* ===== 微信风格聊天界面 ===== */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --wx-green: #07C160;
+    --wx-green-dark: #06AD56;
+    --wx-bg: #EDEDED;
+    --wx-white: #FFFFFF;
+    --wx-text: #1C1C1E;
+    --wx-text-light: #888888;
+    --wx-border: #E5E5E5;
+    --wx-header-bg: #EDEDED;
+    --wx-bubble-self: #95EC69;
+    --wx-bubble-other: #FFFFFF;
+    --wx-contact-active: #C9C9C9;
+    --wx-input-bg: #FFFFFF;
+    --wx-toolbar-bg: #F7F7F7;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', 'Microsoft YaHei', sans-serif;
+    background: var(--wx-bg);
+    color: var(--wx-text);
+    line-height: 1.5;
+    overflow: hidden;
+    height: 100vh;
+}
+
+/* ===== 整体布局 ===== */
+.wechat-app {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* ===== 左侧联系人列表 ===== */
+.wx-contacts {
+    width: 280px;
+    min-width: 280px;
+    background: var(--wx-white);
+    border-right: 1px solid var(--wx-border);
+    display: flex;
+    flex-direction: column;
+}
+
+.wx-contacts-header {
+    height: 56px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--wx-header-bg);
+    border-bottom: 1px solid var(--wx-border);
+}
+
+.wx-contacts-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--wx-text);
+}
+
+.wx-contacts-actions {
+    display: flex;
+    gap: 16px;
+}
+
+.wx-icon-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.wx-icon-btn:hover {
+    opacity: 1;
+}
+
+.wx-contacts-search {
+    padding: 8px 12px;
+    background: var(--wx-white);
+}
+
+.wx-search-input {
+    width: 100%;
+    padding: 6px 10px;
+    border: none;
+    background: var(--wx-bg);
+    border-radius: 4px;
+    font-size: 13px;
+    color: var(--wx-text);
+    outline: none;
+}
+
+.wx-contacts-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* 联系人项 */
+.wx-contact-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.1s;
+    border-bottom: none;
+}
+
+.wx-contact-item:hover {
+    background: #F0F0F0;
+}
+
+.wx-contact-item.active {
+    background: var(--wx-contact-active);
+}
+
+.wx-contact-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.wx-contact-info {
+    flex: 1;
+    min-width: 0;
+    border-bottom: 0.5px solid #ECECEC;
+    padding: 2px 0 10px 0;
+}
+
+.wx-contact-name {
+    font-size: 15px;
+    color: var(--wx-text);
+    font-weight: 400;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.wx-contact-preview {
+    font-size: 12px;
+    color: var(--wx-text-light);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+}
+
+/* ===== 右侧聊天区域 ===== */
+.wx-chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--wx-bg);
+    min-width: 0;
+}
+
+/* 聊天顶栏 */
+.wx-chat-header {
+    height: 56px;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--wx-header-bg);
+    border-bottom: 1px solid var(--wx-border);
+    flex-shrink: 0;
+}
+
+.wx-chat-name {
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--wx-text);
+}
+
+/* ===== 消息区域 ===== */
+.wx-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+    background: var(--wx-bg);
+}
+
+/* 欢迎页 */
+.wx-welcome {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--wx-text-light);
+}
+
+.wx-welcome-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.3;
+}
+
+.wx-welcome p {
+    font-size: 14px;
+}
+
+/* 时间标签 */
+.wx-time-label {
+    text-align: center;
+    margin: 12px 0;
+    font-size: 12px;
+    color: #B0B0B0;
+}
+
+.wx-time-label span {
+    background: #DADADA;
+    color: #FFFFFF;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+}
+
+/* 消息行 */
+.wx-msg {
+    display: flex;
+    margin-bottom: 16px;
+    align-items: flex-start;
+}
+
+.wx-msg-self {
+    flex-direction: row-reverse;
+}
+
+.wx-msg-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+}
+
+.wx-msg-other .wx-msg-avatar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    margin-right: 10px;
+}
+
+.wx-msg-self .wx-msg-avatar {
+    background: var(--wx-green);
+    margin-left: 10px;
+}
+
+.wx-msg-body {
+    max-width: 65%;
+    display: flex;
+    flex-direction: column;
+}
+
+.wx-msg-self .wx-msg-body {
+    align-items: flex-end;
+}
+
+/* 消息气泡 */
+.wx-msg-bubble {
+    padding: 10px 12px;
+    border-radius: 4px;
+    font-size: 15px;
+    line-height: 1.5;
+    word-break: break-word;
+    position: relative;
+}
+
+.wx-msg-other .wx-msg-bubble {
+    background: var(--wx-bubble-other);
+    color: var(--wx-text);
+}
+
+.wx-msg-self .wx-msg-bubble {
+    background: var(--wx-bubble-self);
+    color: #000000;
+}
+
+/* 气泡三角箭头 */
+.wx-msg-other .wx-msg-bubble::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 12px;
+    width: 0;
+    height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-right: 6px solid var(--wx-bubble-other);
+}
+
+.wx-msg-self .wx-msg-bubble::before {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 12px;
+    width: 0;
+    height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-left: 6px solid var(--wx-bubble-self);
+}
+
+/* 消息时间 */
+.wx-msg-time {
+    font-size: 11px;
+    color: #B0B0B0;
+    margin-top: 3px;
+    padding: 0 4px;
+}
+
+/* 加载中气泡 */
+.wx-msg-loading {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--wx-text-light);
+    font-size: 14px;
+}
+
+.wx-loading-dots {
+    display: flex;
+    gap: 3px;
+}
+
+.wx-loading-dots span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #B0B0B0;
+    animation: wxDotBounce 1.2s infinite;
+}
+
+.wx-loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.wx-loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes wxDotBounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+}
+
+/* ===== 输入区域 ===== */
+.wx-chat-inputbar {
+    background: var(--wx-toolbar-bg);
+    border-top: 1px solid var(--wx-border);
+    flex-shrink: 0;
+}
+
+.wx-input-tools {
+    display: flex;
+    padding: 6px 12px;
+    gap: 16px;
+}
+
+.wx-tool-item {
+    font-size: 20px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    line-height: 1;
+}
+
+.wx-tool-item:hover {
+    opacity: 1;
+}
+
+.wx-input-row {
+    display: flex;
+    align-items: flex-end;
+    padding: 0 12px 10px;
+    gap: 10px;
+}
+
+.wx-input-row textarea {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #E0E0E0;
+    border-radius: 4px;
+    font-size: 15px;
+    font-family: inherit;
+    resize: none;
+    max-height: 100px;
+    min-height: 36px;
+    line-height: 1.4;
+    outline: none;
+    background: var(--wx-input-bg);
+    color: var(--wx-text);
+}
+
+.wx-input-row textarea:focus {
+    border-color: #CCCCCC;
+}
+
+.wx-send-btn {
+    padding: 6px 16px;
+    background: var(--wx-green);
+    color: var(--wx-white);
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    height: 36px;
+    flex-shrink: 0;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.wx-send-btn:hover {
+    background: var(--wx-green-dark);
+}
+
+.wx-send-btn:active {
+    background: #059A4B;
+}
+
+/* ===== 动画 ===== */
+.wx-msg {
+    animation: wxFadeIn 0.25s ease;
+}
+
+@keyframes wxFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== 响应式（移动端） ===== */
+@media (max-width: 768px) {
+    .wx-contacts {
+        width: 100%;
+        position: fixed;
+        z-index: 100;
+        height: 100vh;
+        transform: translateX(0);
+        transition: transform 0.3s ease;
+    }
+
+    .wx-contacts.hidden {
+        transform: translateX(-100%);
+    }
+
+    .wx-chat {
+        width: 100%;
+        position: fixed;
+        z-index: 99;
+        height: 100vh;
+    }
+
+    .wx-msg-body {
+        max-width: 75%;
+    }
+
+    .wx-chat-header {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    /* 移动端返回按钮 */
+    .wx-back-btn {
+        display: flex !important;
+    }
+}
+
+@media (min-width: 769px) {
+    .wx-back-btn {
+        display: none !important;
+    }
+}
+
+/* ===== 滚动条美化 ===== */
+.wx-chat-messages::-webkit-scrollbar,
+.wx-contacts-list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.wx-chat-messages::-webkit-scrollbar-thumb,
+.wx-contacts-list::-webkit-scrollbar-thumb {
+    background: #C0C0C0;
+    border-radius: 2px;
+}
+
+.wx-chat-messages::-webkit-scrollbar-track,
+.wx-contacts-list::-webkit-scrollbar-track {
+    background: transparent;
+}

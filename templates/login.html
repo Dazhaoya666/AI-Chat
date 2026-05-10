@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI女团 - 登录</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .logo-icon img {
+            width: 120px;
+            height: auto;
+        }
+    </style>
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-box">
+            <div class="logo">
+                <div class="logo-icon"><img src="/static/images/logo.png" alt="AI女团"></div>
+                <h1>AI女团</h1>
+                <p>联系我们的团员</p>
+            </div>
+            
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('login')">登录</button>
+                <button class="tab-btn" onclick="switchTab('register')">注册</button>
+            </div>
+            
+            <!-- 登录表单 -->
+            <form id="loginForm" class="form active">
+                <div class="input-group">
+                    <label>账号</label>
+                    <input type="text" id="loginUsername" placeholder="请输入账号" required>
+                </div>
+                <div class="input-group">
+                    <label>密码</label>
+                    <input type="password" id="loginPassword" placeholder="请输入密码" required>
+                </div>
+                <button type="submit" class="btn btn-primary">登录</button>
+            </form>
+            
+            <!-- 注册表单 -->
+            <form id="registerForm" class="form">
+                <div class="input-group">
+                    <label>账号</label>
+                    <input type="text" id="registerUsername" placeholder="请输入账号" required>
+                </div>
+                <div class="input-group">
+                    <label>密码</label>
+                    <input type="password" id="registerPassword" placeholder="请输入密码" required>
+                </div>
+                <div class="input-group">
+                    <label>确认密码</label>
+                    <input type="password" id="confirmPassword" placeholder="请再次输入密码" required>
+                </div>
+                <button type="submit" class="btn btn-primary">注册</button>
+            </form>
+            
+            <div id="message" class="message"></div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="/admin/login" style="color: rgba(255,255,255,0.5); text-decoration: none; font-size: 12px;">管理员入口</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat - 管理后台</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        .status-active { background: #E8F5E9; color: #2E7D32; }
+        .status-temp { background: #FFF3E0; color: #EF6C00; }
+        .status-banned { background: #FFEBEE; color: #C62828; }
+        .password-cell { font-family: monospace; font-size: 11px; color: #666; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+        .moment-form textarea { min-height: 80px; }
+        .image-inputs input { margin-bottom: 5px; }
+    </style>
+</head>
+<body class="admin-page">
+    <div class="admin-container">
+        <div class="admin-sidebar">
+            <div class="admin-logo">
+                <span>⚙️</span>
+                <h2>管理后台</h2>
+            </div>
+            <nav class="admin-nav">
+                <a href="#" class="nav-item active" onclick="showSection('characters')">
+                    <span>🎭</span> 角色管理
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('worldbooks')">
+                    <span>🌍</span> 世界书
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('experiences')">
+                    <span>📖</span> 经历管理
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('moments')">
+                    <span>📷</span> 朋友圈
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('users')">
+                    <span>👥</span> 用户管理
+                </a>
+            </nav>
+            <div class="admin-sidebar-footer">
+                <button onclick="logout()" class="btn btn-small btn-secondary">退出</button>
+            </div>
+        </div>
+        
+        <div class="admin-main">
+            <!-- ===== 角色管理 ===== -->
+            <div id="charactersSection" class="admin-section active">
+                <div class="section-header">
+                    <h2>🎭 角色管理</h2>
+                    <div class="header-actions">
+                        <label class="btn btn-secondary import-btn">
+                            📥 导入角色卡
+                            <input type="file" accept=".json,.png" onchange="importCharacter(event)" hidden>
+                        </label>
+                        <button onclick="openCharacterModal()" class="btn btn-primary">+ 新建角色</button>
+                    </div>
+                </div>
+                <p class="section-hint">支持导入傻酒馆(SillyTavern)角色卡：JSON 文件和 PNG 图片格式</p>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>ID</th><th>名称</th><th>标签</th><th>状态</th><th>版本</th><th>操作</th></tr>
+                        </thead>
+                        <tbody id="charactersTable"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- ===== 世界书管理 ===== -->
+            <div id="worldbooksSection" class="admin-section">
+                <div class="section-header">
+                    <h2>🌍 世界书管理</h2>
+                    <div class="header-actions">
+                        <label class="btn btn-secondary import-btn">
+                            📥 导入世界书
+                            <input type="file" accept=".json" onchange="importWorldBook(event)" hidden>
+                        </label>
+                        <button onclick="openWorldBookModal()" class="btn btn-primary">+ 新建世界书</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>ID</th><th>名称</th><th>描述</th><th>条目数</th><th>扫描深度</th><th>操作</th></tr>
+                        </thead>
+                        <tbody id="worldbooksTable"></tbody>
+                    </table>
+                </div>
+                <div id="loreEntriesPanel" style="display:none; margin-top:20px;">
+                    <div class="section-header">
+                        <h3 id="loreEntriesTitle">条目列表</h3>
+                        <button onclick="openLoreEntryModal()" class="btn btn-primary btn-small">+ 添加条目</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr><th>关键词</th><th>次要关键词</th><th>内容摘要</th><th>常驻</th><th>启用</th><th>位置</th><th>操作</th></tr>
+                            </thead>
+                            <tbody id="loreEntriesTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div id="wbBindPanel" style="display:none; margin-top:20px;">
+                    <div class="section-header"><h3>角色绑定</h3></div>
+                    <div id="wbBindContent"></div>
+                </div>
+            </div>
+            
+            <!-- ===== 经历管理 ===== -->
+            <div id="experiencesSection" class="admin-section">
+                <div class="section-header">
+                    <h2>📖 经历管理</h2>
+                    <button onclick="openExperienceModal()" class="btn btn-primary">+ 添加经历</button>
+                </div>
+                <div class="form-group">
+                    <label>选择角色：</label>
+                    <select id="experienceCharacterSelect" onchange="loadExperiences()">
+                        <option value="">请选择角色</option>
+                    </select>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead><tr><th>日期</th><th>经历内容</th><th>操作</th></tr></thead>
+                        <tbody id="experiencesTable"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- ===== 朋友圈管理 ===== -->
+            <div id="momentsSection" class="admin-section">
+                <div class="section-header">
+                    <h2>📷 朋友圈管理</h2>
+                    <button onclick="openMomentModal()" class="btn btn-primary">+ 发布动态</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr><th>ID</th><th>角色</th><th>内容</th><th>点赞</th><th>发布时间</th><th>操作</th></tr>
+                        </thead>
+                        <tbody id="momentsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- ===== 用户管理 ===== -->
+            <div id="usersSection" class="admin-section">
+                <div class="section-header">
+                    <h2>👥 用户管理</h2>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>用户名</th>
+                                <th>密码哈希</th>
+                                <th>亲密度</th>
+                                <th>状态</th>
+                                <th>注册时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTable"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 角色编辑模态框 -->
+    <div id="characterModal" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h3 id="characterModalTitle">新建角色</h3>
+                <button onclick="closeModal('characterModal')" class="btn-close">×</button>
+            </div>
+            <form id="characterForm" class="modal-form">
+                <input type="hidden" id="characterId">
+                <!-- 头像上传 -->
+                <div class="form-group" style="text-align:center;">
+                    <div id="avatarPreview" class="avatar-preview" onclick="document.getElementById('avatarInput').click()">
+                        <span id="avatarPlaceholder">🎭</span>
+                        <img id="avatarImage" src="" style="display:none;" alt="头像">
+                        <div class="avatar-overlay">点击上传头像</div>
+                    </div>
+                    <input type="file" id="avatarInput" accept="image/*" style="display:none;" onchange="previewAvatar(this)">
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1"><label>角色名称 *</label><input type="text" id="charName" required></div>
+                    <div class="form-group" style="flex:1"><label>创作者</label><input type="text" id="charCreator"></div>
+                </div>
+                <div class="form-group"><label>标签（逗号分隔）</label><input type="text" id="charTags"></div>
+                <div class="form-group"><label>角色描述</label><textarea id="charDescription" rows="3"></textarea></div>
+                <div class="form-group"><label>性格特征</label><textarea id="charPersonality" rows="2"></textarea></div>
+                <div class="form-group"><label>场景设定</label><textarea id="charScenario" rows="2"></textarea></div>
+                <div class="form-group"><label>系统提示词</label><textarea id="charSystemPrompt" rows="3"></textarea></div>
+                <div class="form-group"><label>开场白</label><textarea id="charFirstMes" rows="2"></textarea></div>
+                <div class="form-group"><label>对话示例</label><textarea id="charMesExample" rows="3"></textarea></div>
+                <div class="form-group"><label>历史消息后指令</label><textarea id="charPostHistory" rows="2"></textarea></div>
+                <div class="form-group"><label>创作者备注</label><textarea id="charCreatorNotes" rows="2"></textarea></div>
+                <div class="form-group"><label><input type="checkbox" id="charIsActive"> 设为活跃角色</label></div>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeModal('characterModal')" class="btn btn-secondary">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 经历添加模态框 -->
+    <div id="experienceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>添加经历</h3><button onclick="closeModal('experienceModal')" class="btn-close">×</button></div>
+            <form id="experienceForm">
+                <div class="form-group"><label>选择角色 *</label><select id="expCharacterId" required><option value="">请选择角色</option></select></div>
+                <div class="form-group"><label>日期 *</label><input type="date" id="expDate" required></div>
+                <div class="form-group"><label>经历内容 *</label><textarea id="expContent" rows="4" required></textarea></div>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeModal('experienceModal')" class="btn btn-secondary">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 世界书模态框 -->
+    <div id="worldBookModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="wbModalTitle">新建世界书</h3><button onclick="closeModal('worldBookModal')" class="btn-close">×</button></div>
+            <form id="worldBookForm">
+                <input type="hidden" id="wbId">
+                <div class="form-group"><label>世界书名称 *</label><input type="text" id="wbName" required></div>
+                <div class="form-group"><label>描述</label><textarea id="wbDescription" rows="2"></textarea></div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1"><label>扫描深度</label><input type="number" id="wbScanDepth" value="50"></div>
+                    <div class="form-group" style="flex:1"><label>Token 预算</label><input type="number" id="wbTokenBudget" value="2048"></div>
+                </div>
+                <div class="form-group"><label><input type="checkbox" id="wbRecursive" checked> 允许递归扫描</label></div>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeModal('worldBookModal')" class="btn btn-secondary">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 世界书条目模态框 -->
+    <div id="loreEntryModal" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header"><h3 id="loreModalTitle">添加条目</h3><button onclick="closeModal('loreEntryModal')" class="btn-close">×</button></div>
+            <form id="loreEntryForm">
+                <input type="hidden" id="loreEntryId">
+                <div class="form-row">
+                    <div class="form-group" style="flex:1"><label>主关键词（逗号分隔）*</label><input type="text" id="loreKeys" required></div>
+                    <div class="form-group" style="flex:1"><label>次要关键词</label><input type="text" id="loreSecondaryKeys"></div>
+                </div>
+                <div class="form-group"><label>条目内容 *</label><textarea id="loreContent" rows="4" required></textarea></div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1"><label>备注/标题</label><input type="text" id="loreComment"></div>
+                    <div class="form-group" style="flex:1"><label>插入位置</label><select id="lorePosition"><option value="before_char">角色定义前</option><option value="after_char">角色定义后</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1"><label>优先级</label><input type="number" id="lorePriority" value="10"></div>
+                    <div class="form-group" style="flex:1"><label>插入顺序</label><input type="number" id="loreInsertionOrder" value="100"></div>
+                    <div class="form-group" style="flex:1"><label>触发概率</label><input type="number" id="loreProbability" value="100" min="0" max="100"></div>
+                </div>
+                <div class="form-checks">
+                    <label><input type="checkbox" id="loreConstant"> 常驻</label>
+                    <label><input type="checkbox" id="loreSelective"> 选择性模式</label>
+                    <label><input type="checkbox" id="loreCaseSensitive"> 区分大小写</label>
+                    <label><input type="checkbox" id="loreUseRegex"> 使用正则</label>
+                    <label><input type="checkbox" id="loreEnabled" checked> 启用</label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeModal('loreEntryModal')" class="btn btn-secondary">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 朋友圈发布模态框 -->
+    <div id="momentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>发布朋友圈</h3><button onclick="closeModal('momentModal')" class="btn-close">×</button></div>
+            <form id="momentForm" enctype="multipart/form-data">
+                <div class="form-group"><label>选择角色 *</label><select id="momentCharacterId" required><option value="">请选择角色</option></select></div>
+                <div class="form-group"><label>内容 *</label><textarea id="momentContent" rows="4" required placeholder="分享点什么..."></textarea></div>
+                <div class="form-group">
+                    <label>上传图片（可选，最多9张）</label>
+                    <input type="file" id="momentImages" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
+                    <div id="imagePreview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeModal('momentModal')" class="btn btn-secondary">取消</button>
+                    <button type="submit" class="btn btn-primary">发布</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 用户状态管理模态框 -->
+    <div id="userStatusModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>管理用户状态</h3><button onclick="closeModal('userStatusModal')" class="btn-close">×</button></div>
+            <form id="userStatusForm">
+                <input type="hidden" id="statusUserId">
+                <div class="form-group"><label>当前用户</label><input type="text" id="statusUsername" readonly></div>
+                <div class="form-group"><label>状态 *</label>
+                    <select id="userStatus" required>
+                        <option value="active">正常</option>
+                        <option value="temp_banned">临时封禁</option>
+                        <option value="banned">永久封禁</option>
+                    </select>
+                </div>
+                <div class="form-group" id="banUntilGroup" style="display:none;"><label>解封时间</label><input type="datetime-local" id="banUntil"></div>
+                <div class="form-group"><label>封禁原因</label><textarea id="banReason" rows="2"></textarea></div>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeModal('userStatusModal')" class="btn btn-secondary">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 亲密度调整模态框 -->
+    <div id="intimacyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>调整亲密度</h3><button onclick="closeModal('intimacyModal')" class="btn-close">×</button></div>
+            <form id="intimacyForm">
+                <input type="hidden" id="intimacyUserId">
+                <div class="form-group"><label>当前用户</label><input type="text" id="intimacyUsername" readonly></div>
+                <div class="form-group"><label>亲密度 (0-100) *</label><input type="number" id="intimacyValue" min="0" max="100" step="0.1" required></div>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeModal('intimacyModal')" class="btn btn-secondary">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat - 朋友圈</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .moments-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--white);
+            min-height: 100vh;
+        }
+        .moments-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 20px 20px;
+            position: relative;
+        }
+        .moments-header h1 {
+            font-size: 20px;
+            font-weight: 500;
+        }
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .moments-list {
+            padding: 20px;
+        }
+        .moment-item {
+            display: flex;
+            gap: 12px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .moment-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        .moment-content {
+            flex: 1;
+        }
+        .moment-author {
+            font-weight: 500;
+            color: #576B95;
+            cursor: pointer;
+            margin-bottom: 4px;
+        }
+        .moment-text {
+            color: var(--text);
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+        .moment-images {
+            display: grid;
+            gap: 4px;
+            margin-bottom: 10px;
+        }
+        .moment-images.single {
+            grid-template-columns: 1fr;
+        }
+        .moment-images.double {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .moment-images.multiple {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        .moment-images img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .moment-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-light);
+            font-size: 12px;
+        }
+        .moment-actions {
+            display: flex;
+            gap: 15px;
+        }
+        .moment-action {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .moment-action.liked {
+            color: #E74C3C;
+        }
+        .loading-more {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-light);
+        }
+    </style>
+</head>
+<body>
+    <div class="moments-container">
+        <div class="moments-header">
+            <a href="/chat" class="back-btn">← 返回聊天</a>
+            <h1>朋友圈</h1>
+        </div>
+        
+        <div class="moments-list" id="momentsList">
+            <div class="loading-more">加载中...</div>
+        </div>
+    </div>
+    
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/';
+        }
+        
+        function getHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            };
+        }
+        
+        async function loadMoments() {
+            try {
+                const r = await fetch('/api/moments', { headers: getHeaders() });
+                if (r.ok) {
+                    const moments = await r.json();
+                    renderMoments(moments);
+                } else if (r.status === 401) {
+                    window.location.href = '/';
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        
+        function renderMoments(moments) {
+            const container = document.getElementById('momentsList');
+            
+            if (moments.length === 0) {
+                container.innerHTML = '<div class="loading-more">暂无动态</div>';
+                return;
+            }
+            
+            container.innerHTML = moments.map(m => {
+                let imagesHtml = '';
+                if (m.images) {
+                    try {
+                        const images = JSON.parse(m.images);
+                        if (images.length > 0) {
+                            const gridClass = images.length === 1 ? 'single' : images.length === 2 ? 'double' : 'multiple';
+                            imagesHtml = `<div class="moment-images ${gridClass}">${images.map(img => `<img src="${img}" alt="">`).join('')}</div>`;
+                        }
+                    } catch (e) {}
+                }
+                
+                const timeStr = new Date(m.created_at).toLocaleString('zh-CN', {
+                    month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                
+                return `
+                    <div class="moment-item">
+                        <div class="moment-avatar" onclick="goToChat(${m.character_id})">🎭</div>
+                        <div class="moment-content">
+                            <div class="moment-author" onclick="goToChat(${m.character_id})">${m.character_name}</div>
+                            <div class="moment-text">${escapeHtml(m.content)}</div>
+                            ${imagesHtml}
+                            <div class="moment-meta">
+                                <span>${timeStr}</span>
+                                <div class="moment-actions">
+                                    <span class="moment-action ${m.is_liked ? 'liked' : ''}" onclick="toggleLike(${m.id})">
+                                        ${m.is_liked ? '❤️' : '🤍'} ${m.likes_count}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        async function toggleLike(momentId) {
+            try {
+                const r = await fetch(`/api/moments/${momentId}/like`, {
+                    method: 'POST',
+                    headers: getHeaders()
+                });
+                if (r.ok) {
+                    loadMoments();
+                }
+            } catch (e) {}
+        }
+        
+        function goToChat(characterId) {
+            if (characterId) {
+                localStorage.setItem('selectedCharacterId', characterId);
+            }
+            window.location.href = '/chat';
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        loadMoments();
+    </script>
+</body>
+</html>
