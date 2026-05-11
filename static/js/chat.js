@@ -3,6 +3,14 @@
 let currentCharacter = null;
 let isLoading = false;
 
+// 移动端侧边栏切换
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('open');
+}
+
 // 检查登录状态
 const token = localStorage.getItem('token');
 if (!token) {
@@ -96,6 +104,14 @@ function selectCharacter(character) {
     
     // 加载历史消息
     loadMessages();
+    
+    // 移动端：选择角色后关闭侧边栏
+    if (window.innerWidth <= 768) {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+    }
 }
 
 // 加载历史消息

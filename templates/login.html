@@ -53,14 +53,23 @@
                     <label>确认密码</label>
                     <input type="password" id="confirmPassword" placeholder="请再次输入密码" required>
                 </div>
+                <div class="input-group">
+                    <label>年龄</label>
+                    <input type="number" id="registerAge" placeholder="请输入年龄" min="1" max="150">
+                </div>
+                <div class="input-group">
+                    <label>性别</label>
+                    <select id="registerGender">
+                        <option value="">请选择</option>
+                        <option value="男">男</option>
+                        <option value="女">女</option>
+                        <option value="保密">保密</option>
+                    </select>
+                </div>
                 <button type="submit" class="btn btn-primary">注册</button>
             </form>
             
             <div id="message" class="message"></div>
-            
-            <div style="text-align: center; margin-top: 20px;">
-                <a href="/admin/login" style="color: rgba(255,255,255,0.5); text-decoration: none; font-size: 12px;">管理员入口</a>
-            </div>
         </div>
     </div>
     

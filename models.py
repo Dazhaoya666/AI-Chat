@@ -6,6 +6,8 @@ from datetime import datetime
 class UserCreate(BaseModel):
     username: str
     password: str
+    age: Optional[int] = None
+    gender: Optional[str] = ""
 
 class UserLogin(BaseModel):
     username: str
@@ -14,15 +16,18 @@ class UserLogin(BaseModel):
 class UserResponse(BaseModel):
     id: int
     username: str
+    age: Optional[int] = None
+    gender: str
     created_at: datetime
     class Config:
         from_attributes = True
 
 class UserAdminResponse(BaseModel):
-    """管理员看到的用户信息（包含敏感信息）"""
     id: int
     username: str
     hashed_password: str
+    age: Optional[int] = None
+    gender: str
     intimacy: float
     status: str
     ban_until: Optional[datetime]
@@ -253,9 +258,13 @@ class ChatRequest(BaseModel):
 
 # ========== 管理员操作 ==========
 class UserStatusUpdate(BaseModel):
-    status: str  # active, temp_banned, banned
+    status: str
     ban_until: Optional[datetime] = None
     ban_reason: str = ""
 
 class UserIntimacyUpdate(BaseModel):
     intimacy: float
+
+class UserUpdate(BaseModel):
+    age: Optional[int] = None
+    gender: Optional[str] = None

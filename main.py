@@ -21,7 +21,7 @@ from database import (
 )
 from models import (
     UserCreate, UserLogin, UserResponse, UserAdminResponse,
-    UserStatusUpdate, UserIntimacyUpdate,
+    UserStatusUpdate, UserIntimacyUpdate, UserUpdate,
     Token, CharacterCreate, CharacterUpdate, CharacterResponse, CharacterDetailResponse,
     ExperienceCreate, ExperienceResponse,
     MomentCreate, MomentResponse, MomentLikeCreate,
@@ -87,7 +87,12 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
     hashed_password = get_password_hash(user.password)
-    db_user = User(username=user.username, hashed_password=hashed_password)
+    db_user = User(
+        username=user.username, 
+        hashed_password=hashed_password,
+        age=user.age,
+        gender=user.gender or ""
+    )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
@@ -636,6 +641,19 @@ async def update_user_intimacy(user_id: int, intimacy_update: UserIntimacyUpdate
     db.commit()
     return {"message": f"亲密度已调整为: {user.intimacy:.1f}"}
 
+@app.put("/api/admin/users/{user_id}")
+async def update_user(user_id: int, user_update: UserUpdate, db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
+    """更新用户信息"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user_update.age is not None:
+        user.age = user_update.age
+    if user_update.gender is not None:
+        user.gender = user_update.gender
+    db.commit()
+    return {"message": "用户信息已更新"}
+
 @app.delete("/api/admin/users/{user_id}")
 async def delete_user(user_id: int, db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
     """删除用户"""
@@ -647,6 +665,32 @@ async def delete_user(user_id: int, db: Session = Depends(get_db), admin: User =
     db.delete(user)
     db.commit()
     return {"message": "User deleted"}
+
+@app.get("/api/admin/users/{user_id}/messages")
+async def get_user_messages(user_id: int, character_id: Optional[int] = None, limit: int = 100, db: Session = Depends(get_db), admin: User = Depends(get_current_admin)):
+    """管理员查看指定用户的聊天记录"""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    query = db.query(Message).filter(Message.user_id == user_id)
+    if character_id:
+        query = query.filter(Message.character_id == character_id)
+    messages = query.order_by(Message.created_at.desc()).limit(limit).all()
+    
+    result = []
+    for m in messages:
+        char = db.query(Character).filter(Character.id == m.character_id).first()
+        result.append({
+            "id": m.id,
+            "character_id": m.character_id,
+            "character_name": char.name if char else "未知角色",
+            "content": m.content,
+            "is_user": m.is_user,
+            "created_at": m.created_at
+        })
+    
+    return list(reversed(result))
 
 if __name__ == "__main__":
     import uvicorn

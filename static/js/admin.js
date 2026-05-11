@@ -9,6 +9,16 @@ let characters = [];
 let worldbooks = [];
 let currentWbId = null;
 
+// 页面标题映射
+const pageTitles = {
+    'characters': '🎭 角色管理',
+    'worldbooks': '🌍 世界书',
+    'experiences': '📖 经历管理',
+    'moments': '📷 朋友圈',
+    'users': '👥 用户管理',
+    'chatlogs': '💬 聊天记录'
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     loadCharacters();
     loadWorldBooks();
@@ -23,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('momentForm').addEventListener('submit', saveMoment);
     document.getElementById('userStatusForm').addEventListener('submit', saveUserStatus);
     document.getElementById('intimacyForm').addEventListener('submit', saveIntimacy);
+    document.getElementById('userEditForm').addEventListener('submit', saveUserEdit);
     
     // 状态选择变化时显示/隐藏解封时间
     document.getElementById('userStatus').addEventListener('change', function() {
@@ -38,14 +49,37 @@ function getHeaders() {
     };
 }
 
+// 移动端侧边栏切换
+function toggleAdminSidebar() {
+    const sidebar = document.getElementById('adminSidebar');
+    const overlay = document.getElementById('adminSidebarOverlay');
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('open');
+}
+
+function closeAdminSidebar() {
+    const sidebar = document.getElementById('adminSidebar');
+    const overlay = document.getElementById('adminSidebarOverlay');
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+}
+
 function showSection(section) {
     document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     document.getElementById(section + 'Section').classList.add('active');
-    event.target.closest('.nav-item').classList.add('active');
+    // 可能通过点击标签页或者侧边栏调用，都更新激活状态
+    const navItem = document.querySelector(`.nav-item[onclick*="${section}"]`);
+    if (navItem) navItem.classList.add('active');
+    // 更新页面标题
+    const titleEl = document.getElementById('adminPageTitle');
+    if (titleEl && pageTitles[section]) {
+        titleEl.textContent = pageTitles[section];
+    }
     if (section === 'experiences') loadCharacterSelects();
     if (section === 'moments') loadMoments();
     if (section === 'users') loadUsers();
+    if (section === 'chatlogs') loadChatlogUserSelect();
 }
 
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
@@ -622,11 +656,13 @@ function renderUsersTable(users) {
         <tr>
             <td>${u.id}</td>
             <td><strong>${u.username}</strong></td>
-            <td class="password-cell" title="${u.hashed_password}">${u.hashed_password.substring(0, 20)}...</td>
+            <td>${u.age || '-'}</td>
+            <td>${u.gender || '-'}</td>
             <td>${u.intimacy.toFixed(1)}</td>
             <td><span class="status-badge ${statusClass}">${statusText}</span></td>
             <td>${new Date(u.created_at).toLocaleDateString()}</td>
             <td>
+                <button class="btn-edit" onclick='openUserEditModal(${JSON.stringify(u).replace(/'/g,"&#39;")})'>编辑</button>
                 <button class="btn-edit" onclick='openUserStatusModal(${JSON.stringify(u).replace(/'/g,"&#39;")})'>状态</button>
                 <button class="btn-edit" onclick='openIntimacyModal(${u.id}, "${u.username}", ${u.intimacy})'>亲密度</button>
                 ${u.username !== 'admin' ? `<button class="btn-delete" onclick="deleteUser(${u.id})">删除</button>` : '-'}
@@ -691,6 +727,90 @@ async function deleteUser(userId) {
     try {
         const r = await fetch(`/api/admin/users/${userId}`, { method: 'DELETE', headers: getHeaders() });
         if (r.ok) loadUsers(); else { const err = await r.json(); alert(err.detail || '删除失败'); }
+    } catch (e) { alert('网络错误'); }
+}
+
+async function loadChatlogUserSelect() {
+    try {
+        const r = await fetch('/api/admin/users', { headers: getHeaders() });
+        if (r.ok) {
+            const users = await r.json();
+            const nonAdmins = users.filter(u => u.username !== 'admin');
+            document.getElementById('chatlogUserSelect').innerHTML = 
+                '<option value="">请选择用户</option>' + 
+                nonAdmins.map(u => `<option value="${u.id}">${u.username}</option>`).join('');
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function loadUserChatLogs() {
+    const userId = document.getElementById('chatlogUserSelect').value;
+    const container = document.getElementById('chatlogContainer');
+    
+    if (!userId) {
+        container.innerHTML = '<div class="chat-log-empty">请选择用户查看聊天记录</div>';
+        return;
+    }
+    
+    try {
+        const r = await fetch(`/api/admin/users/${userId}/messages`, { headers: getHeaders() });
+        if (r.ok) {
+            const messages = await r.json();
+            if (messages.length === 0) {
+                container.innerHTML = '<div class="chat-log-empty">该用户暂无聊天记录</div>';
+            } else {
+                container.innerHTML = messages.map(m => `
+                    <div class="chat-log-item ${m.is_user ? 'chat-log-user' : 'chat-log-ai'}">
+                        <div class="chat-log-content">${escapeHtml(m.content)}</div>
+                        <div class="chat-log-meta">
+                            ${m.is_user ? '用户' : m.character_name} · ${formatDateTime(m.created_at)}
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+    } catch (e) { 
+        container.innerHTML = '<div class="chat-log-empty">加载失败</div>'; 
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatDateTime(dateStr) {
+    const date = new Date(dateStr);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
+function openUserEditModal(user) {
+    document.getElementById('editUserId').value = user.id;
+    document.getElementById('editUsername').value = user.username;
+    document.getElementById('editAge').value = user.age || '';
+    document.getElementById('editGender').value = user.gender || '';
+    document.getElementById('userEditModal').classList.add('active');
+}
+
+async function saveUserEdit(e) {
+    e.preventDefault();
+    const userId = document.getElementById('editUserId').value;
+    const age = document.getElementById('editAge').value;
+    const gender = document.getElementById('editGender').value;
+    const data = {};
+    if (age) data.age = parseInt(age);
+    if (gender) data.gender = gender;
+    try {
+        const r = await fetch(`/api/admin/users/${userId}`, { method: 'PUT', headers: getHeaders(), body: JSON.stringify(data) });
+        if (r.ok) { closeModal('userEditModal'); loadUsers(); }
+        else { const err = await r.json(); alert(err.detail || '保存失败'); }
     } catch (e) { alert('网络错误'); }
 }
 

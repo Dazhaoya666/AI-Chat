@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI Chat - 管理后台</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <style>
@@ -18,30 +18,71 @@
         .password-cell { font-family: monospace; font-size: 11px; color: #666; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
         .moment-form textarea { min-height: 80px; }
         .image-inputs input { margin-bottom: 5px; }
+        .chat-log-container {
+            background: #f5f5f5;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 500px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .chat-log-empty {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+        }
+        .chat-log-item {
+            margin-bottom: 12px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            max-width: 80%;
+        }
+        .chat-log-user {
+            background: #E3F2FD;
+            margin-left: 0;
+        }
+        .chat-log-ai {
+            background: #FFF8E1;
+            margin-left: auto;
+        }
+        .chat-log-meta {
+            font-size: 11px;
+            color: #888;
+            margin-top: 4px;
+        }
+        .chat-log-content {
+            word-break: break-word;
+        }
     </style>
 </head>
 <body class="admin-page">
     <div class="admin-container">
-        <div class="admin-sidebar">
+        <!-- 侧边栏遮罩 -->
+        <div class="sidebar-overlay" id="adminSidebarOverlay" onclick="toggleAdminSidebar()"></div>
+        
+        <div class="admin-sidebar" id="adminSidebar">
             <div class="admin-logo">
                 <span>⚙️</span>
                 <h2>管理后台</h2>
             </div>
             <nav class="admin-nav">
-                <a href="#" class="nav-item active" onclick="showSection('characters')">
+                <a href="#" class="nav-item active" onclick="showSection('characters'); closeAdminSidebar()">
                     <span>🎭</span> 角色管理
                 </a>
-                <a href="#" class="nav-item" onclick="showSection('worldbooks')">
+                <a href="#" class="nav-item" onclick="showSection('worldbooks'); closeAdminSidebar()">
                     <span>🌍</span> 世界书
                 </a>
-                <a href="#" class="nav-item" onclick="showSection('experiences')">
+                <a href="#" class="nav-item" onclick="showSection('experiences'); closeAdminSidebar()">
                     <span>📖</span> 经历管理
                 </a>
-                <a href="#" class="nav-item" onclick="showSection('moments')">
+                <a href="#" class="nav-item" onclick="showSection('moments'); closeAdminSidebar()">
                     <span>📷</span> 朋友圈
                 </a>
-                <a href="#" class="nav-item" onclick="showSection('users')">
+                <a href="#" class="nav-item" onclick="showSection('users'); closeAdminSidebar()">
                     <span>👥</span> 用户管理
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('chatlogs'); closeAdminSidebar()">
+                    <span>💬</span> 聊天记录
                 </a>
             </nav>
             <div class="admin-sidebar-footer">
@@ -50,16 +91,27 @@
         </div>
         
         <div class="admin-main">
+            <div class="admin-top-bar">
+                <button class="menu-btn" onclick="toggleAdminSidebar()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <span class="admin-page-title" id="adminPageTitle">🎭 角色管理</span>
+            </div>
+            
             <!-- ===== 角色管理 ===== -->
             <div id="charactersSection" class="admin-section active">
                 <div class="section-header">
                     <h2>🎭 角色管理</h2>
                     <div class="header-actions">
                         <label class="btn btn-secondary import-btn">
-                            📥 导入角色卡
+                            📥 导入
                             <input type="file" accept=".json,.png" onchange="importCharacter(event)" hidden>
                         </label>
-                        <button onclick="openCharacterModal()" class="btn btn-primary">+ 新建角色</button>
+                        <button onclick="openCharacterModal()" class="btn btn-primary">+ 新建</button>
                     </div>
                 </div>
                 <p class="section-hint">支持导入傻酒馆(SillyTavern)角色卡：JSON 文件和 PNG 图片格式</p>
@@ -160,7 +212,8 @@
                             <tr>
                                 <th>ID</th>
                                 <th>用户名</th>
-                                <th>密码哈希</th>
+                                <th>年龄</th>
+                                <th>性别</th>
                                 <th>亲密度</th>
                                 <th>状态</th>
                                 <th>注册时间</th>
@@ -169,6 +222,22 @@
                         </thead>
                         <tbody id="usersTable"></tbody>
                     </table>
+                </div>
+            </div>
+            
+            <!-- ===== 聊天记录 ===== -->
+            <div id="chatlogsSection" class="admin-section">
+                <div class="section-header">
+                    <h2>💬 聊天记录</h2>
+                </div>
+                <div class="form-group">
+                    <label>选择用户：</label>
+                    <select id="chatlogUserSelect" onchange="loadUserChatLogs()">
+                        <option value="">请选择用户</option>
+                    </select>
+                </div>
+                <div class="chat-log-container" id="chatlogContainer">
+                    <div class="chat-log-empty">请选择用户查看聊天记录</div>
                 </div>
             </div>
         </div>
@@ -340,6 +409,30 @@
                 <div class="form-group"><label>亲密度 (0-100) *</label><input type="number" id="intimacyValue" min="0" max="100" step="0.1" required></div>
                 <div class="modal-footer">
                     <button type="button" onclick="closeModal('intimacyModal')" class="btn btn-secondary">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 用户信息编辑模态框 -->
+    <div id="userEditModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3>编辑用户信息</h3><button onclick="closeModal('userEditModal')" class="btn-close">×</button></div>
+            <form id="userEditForm">
+                <input type="hidden" id="editUserId">
+                <div class="form-group"><label>用户名</label><input type="text" id="editUsername" readonly></div>
+                <div class="form-group"><label>年龄</label><input type="number" id="editAge" min="1" max="150"></div>
+                <div class="form-group"><label>性别</label>
+                    <select id="editGender">
+                        <option value="">请选择</option>
+                        <option value="男">男</option>
+                        <option value="女">女</option>
+                        <option value="保密">保密</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" onclick="closeModal('userEditModal')" class="btn btn-secondary">取消</button>
                     <button type="submit" class="btn btn-primary">保存</button>
                 </div>
             </form>

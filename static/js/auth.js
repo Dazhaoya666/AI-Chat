@@ -57,20 +57,26 @@ async function handleRegister(e) {
     const username = document.getElementById('registerUsername').value;
     const password = document.getElementById('registerPassword').value;
     const confirmPassword = document.getElementById('confirmPassword').value;
+    const age = document.getElementById('registerAge').value;
+    const gender = document.getElementById('registerGender').value;
     
     if (password !== confirmPassword) {
         showMessage('两次输入的密码不一致', 'error');
         return;
     }
     
+    const data = { username, password };
+    if (age) data.age = parseInt(age);
+    if (gender) data.gender = gender;
+    
     try {
         const response = await fetch('/api/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify(data)
         });
         
-        const data = await response.json();
+        const result = await response.json();
         
         if (response.ok) {
             showMessage('注册成功！请登录', 'success');
@@ -79,7 +85,7 @@ async function handleRegister(e) {
                 document.getElementById('loginUsername').value = username;
             }, 1000);
         } else {
-            showMessage(data.detail || '注册失败', 'error');
+            showMessage(result.detail || '注册失败', 'error');
         }
     } catch (error) {
         showMessage('网络错误，请重试', 'error');

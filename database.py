@@ -1,7 +1,12 @@
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, Float, ForeignKey, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+
+BJ_TZ = timezone(timedelta(hours=8))
+
+def now():
+    return datetime.now(BJ_TZ)
 
 Base = declarative_base()
 engine = create_engine("sqlite:///./ai_chat.db", connect_args={"check_same_thread": False})
@@ -13,12 +18,13 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    created_at = Column(DateTime, default=datetime.now)
+    created_at = Column(DateTime, default=now)
     intimacy = Column(Float, default=0.0)
-    # 用户状态: active(正常), temp_banned(临时封禁), banned(永久封禁)
+    age = Column(Integer, nullable=True)
+    gender = Column(String, default="")
     status = Column(String, default="active")
-    ban_until = Column(DateTime, nullable=True)  # 临时封禁到期时间
-    ban_reason = Column(Text, default="")  # 封禁原因
+    ban_until = Column(DateTime, nullable=True)
+    ban_reason = Column(Text, default="")
     
     messages = relationship("Message", back_populates="user")
     moments_likes = relationship("MomentLike", back_populates="user")
@@ -27,7 +33,6 @@ class Character(Base):
     __tablename__ = "characters"
     
     id = Column(Integer, primary_key=True, index=True)
-    # === 傻酒馆角色卡字段 ===
     name = Column(String, index=True)
     description = Column(Text, default="")
     personality = Column(Text, default="")
@@ -41,13 +46,11 @@ class Character(Base):
     character_version = Column(String, default="1.0.0")
     tags = Column(Text, default="")
     alternate_greetings = Column(Text, default="")
-    # === 兼容旧字段 ===
     background = Column(Text, default="")
     habits = Column(Text, default="")
     world_view = Column(Text, default="")
-    # === 系统字段 ===
-    avatar = Column(String, default="")  # 角色头像路径
-    created_at = Column(DateTime, default=datetime.now)
+    avatar = Column(String, default="")
+    created_at = Column(DateTime, default=now)
     is_active = Column(Boolean, default=True)
     
     experiences = relationship("Experience", back_populates="character")
@@ -59,9 +62,9 @@ class Experience(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     character_id = Column(Integer, ForeignKey("characters.id"))
-    date = Column(DateTime, default=datetime.now)
+    date = Column(DateTime, default=now)
     content = Column(Text)
-    created_at = Column(DateTime, default=datetime.now)
+    created_at = Column(DateTime, default=now)
     
     character = relationship("Character", back_populates="experiences")
 
@@ -73,21 +76,19 @@ class Message(Base):
     character_id = Column(Integer, ForeignKey("characters.id"))
     content = Column(Text)
     is_user = Column(Boolean)
-    created_at = Column(DateTime, default=datetime.now)
+    created_at = Column(DateTime, default=now)
     
     user = relationship("User", back_populates="messages")
     character = relationship("Character", back_populates="messages")
-
-# ========== 朋友圈 / 角色动态 ==========
 
 class CharacterMoment(Base):
     __tablename__ = "character_moments"
     
     id = Column(Integer, primary_key=True, index=True)
     character_id = Column(Integer, ForeignKey("characters.id"))
-    content = Column(Text)  # 文字内容
-    images = Column(Text, default="")  # JSON数组存储图片URL列表
-    created_at = Column(DateTime, default=datetime.now)
+    content = Column(Text)
+    images = Column(Text, default="")
+    created_at = Column(DateTime, default=now)
     likes_count = Column(Integer, default=0)
     
     character = relationship("Character", back_populates="moments")
@@ -99,12 +100,10 @@ class MomentLike(Base):
     id = Column(Integer, primary_key=True, index=True)
     moment_id = Column(Integer, ForeignKey("character_moments.id"))
     user_id = Column(Integer, ForeignKey("users.id"))
-    created_at = Column(DateTime, default=datetime.now)
+    created_at = Column(DateTime, default=now)
     
     moment = relationship("CharacterMoment", back_populates="likes")
     user = relationship("User", back_populates="moments_likes")
-
-# ========== 世界书 / Lorebook ==========
 
 class WorldBook(Base):
     __tablename__ = "worldbooks"
@@ -115,7 +114,7 @@ class WorldBook(Base):
     scan_depth = Column(Integer, default=50)
     token_budget = Column(Integer, default=2048)
     recursive_scanning = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.now)
+    created_at = Column(DateTime, default=now)
     
     entries = relationship("LoreEntry", back_populates="worldbook", cascade="all, delete-orphan")
 
@@ -142,7 +141,7 @@ class LoreEntry(Base):
     sticky = Column(Integer, default=0)
     cooldown = Column(Integer, default=0)
     delay = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.now)
+    created_at = Column(DateTime, default=now)
     
     worldbook = relationship("WorldBook", back_populates="entries")
 
@@ -152,40 +151,36 @@ class CharacterWorldBook(Base):
     id = Column(Integer, primary_key=True, index=True)
     character_id = Column(Integer, ForeignKey("characters.id"))
     worldbook_id = Column(Integer, ForeignKey("worldbooks.id"))
-    created_at = Column(DateTime, default=datetime.now)
+    created_at = Column(DateTime, default=now)
 
-
-# ========== 对话摘要 / 长期记忆 ==========
 
 class ConversationSummary(Base):
-    """对话摘要 - 存储压缩后的对话历史"""
     __tablename__ = "conversation_summaries"
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     character_id = Column(Integer, ForeignKey("characters.id"), index=True)
-    summary = Column(Text)  # 摘要内容
-    key_topics = Column(Text, default="")  # 关键主题（JSON数组）
-    message_count = Column(Integer, default=0)  # 涵盖的消息数量
-    start_time = Column(DateTime)  # 摘要涵盖的起始时间
-    end_time = Column(DateTime)  # 摘要涵盖的结束时间
-    created_at = Column(DateTime, default=datetime.now)
+    summary = Column(Text)
+    key_topics = Column(Text, default="")
+    message_count = Column(Integer, default=0)
+    start_time = Column(DateTime)
+    end_time = Column(DateTime)
+    created_at = Column(DateTime, default=now)
 
 
 class UserMemory(Base):
-    """用户记忆 - 存储关于用户的关键信息"""
     __tablename__ = "user_memories"
     
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), index=True)
     character_id = Column(Integer, ForeignKey("characters.id"), index=True)
-    memory_type = Column(String, default="fact")  # fact(事实), preference(偏好), event(事件), emotion(情绪)
-    content = Column(Text)  # 记忆内容
-    importance = Column(Integer, default=5)  # 重要性 1-10
-    source_message_id = Column(Integer, nullable=True)  # 来源消息ID
-    created_at = Column(DateTime, default=datetime.now)
-    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
-    is_active = Column(Boolean, default=True)  # 是否有效（可被更新或删除）
+    memory_type = Column(String, default="fact")
+    content = Column(Text)
+    importance = Column(Integer, default=5)
+    source_message_id = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=now)
+    updated_at = Column(DateTime, default=now)
+    is_active = Column(Boolean, default=True)
 
 
 def init_db():
