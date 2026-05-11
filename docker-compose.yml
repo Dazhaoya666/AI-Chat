@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  ai-chat:
+    build: .
+    container_name: ai-chat-app
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-your_api_key_here}
+    volumes:
+      - ./data:/app/data
+      - ./static/uploads:/app/static/uploads
+    networks:
+      - ai-chat-network
+
+networks:
+  ai-chat-network:
+    driver: bridge
