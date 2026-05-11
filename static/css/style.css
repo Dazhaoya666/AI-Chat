@@ -224,12 +224,20 @@ body {
 /* ===== 聊天页面 ===== */
 .chat-page {
     height: 100vh;
+    height: 100dvh;
     overflow: hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 
 .chat-container {
     display: flex;
     height: 100vh;
+    height: 100dvh;
+    position: relative;
 }
 
 /* 侧边栏遮罩 */
@@ -535,6 +543,8 @@ body {
     background: var(--white);
     padding: 12px 16px;
     border-top: 1px solid var(--border);
+    flex-shrink: 0;
+    z-index: 10;
 }
 
 .input-container {
@@ -864,6 +874,37 @@ body {
 
 /* ===== 响应式设计 ===== */
 @media (max-width: 768px) {
+    /* 聊天页面移动端优化 */
+    .chat-page {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
+    }
+    
+    .chat-container {
+        height: 100%;
+        height: 100dvh;
+    }
+    
+    .chat-main {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+    
+    /* 确保输入区域固定在底部 */
+    .chat-input-area {
+        flex-shrink: 0;
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        padding: 10px 12px;
+    }
+    
     /* 登录页优化 */
     .login-container {
         padding: 16px;
