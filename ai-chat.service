@@ -1,0 +1,18 @@
+[Unit]
+Description=AI Chat Application
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/AI-Chat
+Environment="TZ=Asia/Shanghai"
+Environment="OPENAI_API_KEY=你的API_KEY"
+ExecStart=/opt/AI-Chat/venv/bin/python /opt/AI-Chat/main.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
