@@ -1,11 +1,19 @@
 // 认证相关功能
 
 // 切换登录/注册标签
-function switchTab(tab) {
+function switchTab(tab, event) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.form').forEach(form => form.classList.remove('active'));
     
-    event.target.classList.add('active');
+    // 通过ID查找目标按钮，这是最可靠的方式
+    const targetBtn = document.getElementById(tab + 'Tab');
+    if (targetBtn) {
+        targetBtn.classList.add('active');
+    } else if (event && event.target) {
+        // 备用方案：通过事件对象
+        event.target.classList.add('active');
+    }
+    
     document.getElementById(tab + 'Form').classList.add('active');
     
     hideMessage();
