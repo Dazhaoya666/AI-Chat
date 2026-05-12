@@ -206,7 +206,8 @@ async function saveCharacter(e) {
                 formData.append('file', avatarFile);
                 await fetch(`/api/characters/${savedChar.id}/avatar`, {
                     method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + token }
+                    headers: { 'Authorization': 'Bearer ' + adminToken },
+                    body: formData
                 });
             }
             closeModal('characterModal');
